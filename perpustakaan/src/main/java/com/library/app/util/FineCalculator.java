@@ -14,7 +14,7 @@ public class FineCalculator {
     }
 
     public static BigDecimal processFine(LocalDate dueDate, LocalDate returnDate) {
-        if (!DateUtil.isLoanLate(dueDate, returnDate)) {
+        if (!DateUtil.isOverdue(dueDate, returnDate)) {
             return BigDecimal.ZERO;
         }
 

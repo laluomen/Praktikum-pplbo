@@ -11,7 +11,6 @@ import com.library.app.util.ValidationUtil;
 import com.library.app.util.DateUtil;
 import com.library.app.util.FineCalculator;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -42,8 +41,6 @@ public class LoanService {
         loan.setCopyId(copy.getId());
         loan.setLoanDate(LocalDate.now());
         loan.setDueDate(DateUtil.calculateDueDate(LocalDate.now()));
-        loan.setFineAmount(BigDecimal.ZERO);
-        loan.setStatus(LoanStatus.ACTIVE);
         loanDAO.save(loan);
 
         copy.markBorrowed();
