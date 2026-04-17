@@ -1,8 +1,9 @@
 package com.library.app.ui.fx;
 
-import com.library.app.ui.KioskFrame;
+import com.library.app.ui.LoginFrame;
+
 import javafx.application.Application;
-import javafx.stage.Stage;
+import javafx.stage.*;;
 
 public class LibraryFxApp extends Application {
     public static void launchApp(String[] args) {
@@ -12,7 +13,8 @@ public class LibraryFxApp extends Application {
     @Override
     public void start(Stage stage) {
         stage.setFullScreen(true);
-        KioskFrame kioskFrame = new KioskFrame();
-        kioskFrame.showOn(stage);
+        // KioskFrame kioskFrame = new KioskFrame();
+        LoginFrame loginFrame=new LoginFrame();
+        loginFrame.showOn(stage);
     }
 }
