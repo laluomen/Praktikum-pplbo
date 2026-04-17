@@ -11,6 +11,8 @@ import javafx.stage.Stage;
 
 import javax.swing.*;
 import java.awt.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 
 public class LoginFrame extends JFrame {
    private final AuthService authService = new AuthService();
@@ -75,10 +77,13 @@ public class LoginFrame extends JFrame {
 
          Platform.runLater(() -> {
             try {
-               Class<?> dashboardClass = Class.forName("com.library.app.ui.AdminDashboardFxApp");
-               Object dashboardApp = dashboardClass.getDeclaredConstructor().newInstance();
-               dashboardClass.getDeclaredMethod("showDashboard", Stage.class)
-                     .invoke(dashboardApp, new Stage());
+               Class<?> dashboardClass = Class.forName("com.library.app.ui.AdminFrame");
+               Constructor<?> constructor = dashboardClass.getDeclaredConstructor();
+               constructor.setAccessible(true);
+               Object dashboardApp = constructor.newInstance();
+               Method showDashboard = dashboardClass.getDeclaredMethod("showDashboard", Stage.class);
+               showDashboard.setAccessible(true);
+               showDashboard.invoke(dashboardApp, new Stage());
             } catch (Exception exception) {
                throw new RuntimeException("Gagal membuka dashboard admin JavaFX.", exception);
             }
