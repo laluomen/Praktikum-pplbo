@@ -9,11 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ProcurementRequestDAO {
-    public void save(ProcurementRequest request) {
+    public long save(ProcurementRequest request) {
         String sql = "INSERT INTO procurement_requests(member_id, requester_name, title, author, note, status) " +
                 "VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection connection = DBConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             if (request.getMemberId() == null) {
                 statement.setNull(1, Types.BIGINT);
             } else {
@@ -25,6 +25,13 @@ public class ProcurementRequestDAO {
             statement.setString(5, request.getNote());
             statement.setString(6, request.getStatus().name());
             statement.executeUpdate();
+
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                if (keys.next()) {
+                    return keys.getLong(1);
+                }
+            }
+            return 0L;
         } catch (SQLException exception) {
             throw new RuntimeException("Gagal menyimpan request pengadaan.", exception);
         }

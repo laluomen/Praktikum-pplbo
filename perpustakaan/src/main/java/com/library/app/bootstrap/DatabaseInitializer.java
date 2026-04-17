@@ -126,6 +126,21 @@ public final class DatabaseInitializer {
                     )
                     """);
 
+            statement.executeUpdate("""
+                    CREATE TABLE IF NOT EXISTS notifications (
+                        id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                        notification_key VARCHAR(120) NOT NULL UNIQUE,
+                        type VARCHAR(40) NOT NULL,
+                        title VARCHAR(200) NOT NULL,
+                        message TEXT NOT NULL,
+                        target_key VARCHAR(60) NOT NULL,
+                        priority VARCHAR(20) NOT NULL DEFAULT 'NORMAL',
+                        is_read BOOLEAN NOT NULL DEFAULT FALSE,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        read_at TIMESTAMP NULL
+                    )
+                    """);
+
         } catch (SQLException exception) {
             throw new IllegalStateException("Gagal membuat tabel database.", exception);
         }
