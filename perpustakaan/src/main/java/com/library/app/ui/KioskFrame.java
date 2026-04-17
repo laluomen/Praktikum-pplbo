@@ -3,7 +3,7 @@ package com.library.app.ui;
 import com.library.app.session.UserSession;
 import com.library.app.ui.panel.KioskDashboardPanel;
 import com.library.app.ui.panel.KioskIconFactory;
-import com.library.app.ui.panel.KioskVisitFxPanel;
+import com.library.app.ui.panel.KioskVisitPanel;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -27,7 +27,7 @@ public class KioskFrame {
    private static final AtomicBoolean FX_RUNTIME_STARTED = new AtomicBoolean(false);
 
    private final KioskDashboardPanel dashboardPanel = new KioskDashboardPanel();
-   private final KioskVisitFxPanel visitPanel = new KioskVisitFxPanel();
+   private final KioskVisitPanel visitPanel = new KioskVisitPanel();
    private final UserSession session;
    private BorderPane root;
    private Stage stage;
