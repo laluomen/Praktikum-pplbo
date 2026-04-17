@@ -144,10 +144,10 @@ public class ReportSectionView {
       cards.setFillHeight(true);
 
       cards.getChildren().addAll(
-         createStatCard("📖", "icon-blue", "Total Peminjaman"),
-         createStatCard("✓", "icon-green", "Dikembalikan"),
-         createStatCard("⏰", "icon-orange", "Terlambat"),
-         createStatCard("¤", "icon-sand", "Total Denda"));
+            createStatCard("📖", "icon-blue", "Total Peminjaman"),
+            createStatCard("✓", "icon-green", "Dikembalikan"),
+            createStatCard("⏰", "icon-orange", "Terlambat"),
+            createStatCard("¤", "icon-sand", "Total Denda"));
 
       for (Node node : cards.getChildren()) {
          HBox.setHgrow(node, Priority.ALWAYS);
@@ -227,8 +227,8 @@ public class ReportSectionView {
       HBox legend = new HBox(12);
       legend.setAlignment(Pos.CENTER_RIGHT);
       legend.getChildren().addAll(
-         createLegendChip("Pinjam", "legend-blue"),
-         createLegendChip("Kembali", "legend-green"));
+            createLegendChip("Pinjam", "legend-blue"),
+            createLegendChip("Kembali", "legend-green"));
 
       header.getChildren().addAll(title, spacer, legend);
 
