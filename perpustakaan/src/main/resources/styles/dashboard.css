@@ -630,6 +630,11 @@
   -fx-text-fill: #6a768c;
 }
 
+.book-table .column-header.book-column-title .label {
+  -fx-alignment: CENTER-LEFT;
+  -fx-padding: 0 0 0 18;
+}
+
 .book-table .table-row-cell {
   -fx-background-color: #ffffff;
   -fx-border-color: transparent transparent #edf2f8 transparent;

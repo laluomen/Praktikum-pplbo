@@ -81,9 +81,9 @@ public class BookManagementPanel {
     }
 
     private VBox buildContent() {
-        VBox content = new VBox(16);
+        VBox content = new VBox(18);
         content.getStyleClass().add("book-management-content");
-        content.setPadding(new Insets(16, 24, 24, 24));
+        content.setPadding(Insets.EMPTY);
 
         HBox header = new HBox();
         header.getStyleClass().add("book-section-header");
@@ -164,6 +164,8 @@ public class BookManagementPanel {
 
         TableColumn<BookCatalogItem, BookCatalogItem> bookColumn = new TableColumn<>("BUKU");
         bookColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue()));
+        bookColumn.setStyle("-fx-alignment: CENTER-LEFT;");
+        bookColumn.getStyleClass().add("book-column-title");
         bookColumn.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(BookCatalogItem item, boolean empty) {
@@ -182,11 +184,12 @@ public class BookManagementPanel {
 
                 VBox wrapper = new VBox(2, title, meta);
                 wrapper.setAlignment(Pos.CENTER_LEFT);
+                wrapper.setPadding(new Insets(0, 0, 0, 8));
                 setText(null);
                 setGraphic(wrapper);
             }
         });
-        bookColumn.setPrefWidth(280);
+        bookColumn.setPrefWidth(170);
 
         TableColumn<BookCatalogItem, String> isbnColumn = new TableColumn<>("ISBN");
         isbnColumn.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getIsbn(), "-")));
@@ -201,13 +204,10 @@ public class BookManagementPanel {
                     return;
                 }
                 Label value = new Label(item);
-                value.getStyleClass().addAll("book-isbn-text", "book-isbn-chip");
-                value.setAlignment(Pos.CENTER);
+                value.getStyleClass().add("book-isbn-text");
                 value.setTooltip(new Tooltip(item));
-                HBox wrapper = new HBox(value);
-                wrapper.setAlignment(Pos.CENTER);
                 setText(null);
-                setGraphic(wrapper);
+                setGraphic(value);
                 setAlignment(Pos.CENTER);
             }
         });
