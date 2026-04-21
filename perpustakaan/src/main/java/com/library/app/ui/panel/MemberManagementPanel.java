@@ -15,10 +15,14 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
+import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -31,6 +35,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.SVGPath;
+import javafx.stage.Window;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -43,6 +48,7 @@ public class MemberManagementPanel {
     private static final Locale ID_LOCALE = Locale.forLanguageTag("id-ID");
     private static final double ADD_MEMBER_MODAL_WIDTH = 760;
     private static final double ADD_MEMBER_MODAL_HEIGHT = 520;
+    private static final double MEMBER_TABLE_HEADER_HEIGHT = 44;
 
     private final MemberService memberService = new MemberService();
     private final ObservableList<Member> members = FXCollections.observableArrayList();
@@ -144,14 +150,11 @@ public class MemberManagementPanel {
         VBox tableCard = new VBox(10);
         tableCard.getStyleClass().addAll("list-card", "member-table-card");
         tableCard.setPadding(new Insets(0));
-        VBox.setVgrow(tableCard, Priority.ALWAYS);
 
         memberTable.getStyleClass().add("member-table");
         memberTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        memberTable.setFixedCellSize(62);
-        memberTable.setMinHeight(260);
+        memberTable.setFixedCellSize(56);
         memberTable.setFocusTraversable(false);
-        VBox.setVgrow(memberTable, Priority.ALWAYS);
 
         Label emptyLabel = new Label("Belum ada data anggota yang dapat ditampilkan.");
         emptyLabel.getStyleClass().add("empty-list");
@@ -160,7 +163,6 @@ public class MemberManagementPanel {
         tableCard.getChildren().add(memberTable);
 
         content.getChildren().addAll(header, toolbar, tableCard);
-        VBox.setVgrow(tableCard, Priority.ALWAYS);
 
         return content;
     }
@@ -168,7 +170,10 @@ public class MemberManagementPanel {
     private void bindFilterEvents() {
         searchField.textProperty().addListener((observable, oldValue, newValue) -> applyFilters());
         typeFilter.valueProperty().addListener((observable, oldValue, newValue) -> applyFilters());
-        filteredMembers.addListener((ListChangeListener<Member>) change -> updateSubtitle());
+        filteredMembers.addListener((ListChangeListener<Member>) change -> {
+            updateSubtitle();
+            updateTableHeight();
+        });
     }
 
     private void configureTable() {
@@ -179,24 +184,20 @@ public class MemberManagementPanel {
         TableColumn<Member, Member> memberColumn = new TableColumn<>("ANGGOTA");
         memberColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue()));
         memberColumn.setStyle("-fx-alignment: CENTER-LEFT;");
+        memberColumn.getStyleClass().add("member-column-title");
         memberColumn.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(Member item, boolean empty) {
                 super.updateItem(item, empty);
+                setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+                setAlignment(Pos.CENTER_LEFT);
                 if (empty || item == null) {
                     setText(null);
                     setGraphic(null);
                     return;
                 }
 
-                Circle avatarCircle = new Circle(16);
-                avatarCircle.getStyleClass().add(resolveAvatarClass(item));
-
-                Label avatarText = new Label(resolveAvatarText(item));
-                avatarText.getStyleClass().add("member-avatar-text");
-
-                StackPane avatar = new StackPane(avatarCircle, avatarText);
-                avatar.getStyleClass().add("member-avatar-wrap");
+                StackPane avatar = createAvatar(item);
 
                 Label title = new Label(safe(item.getName(), "Tanpa Nama"));
                 title.getStyleClass().add("member-title-text");
@@ -216,11 +217,13 @@ public class MemberManagementPanel {
 
         TableColumn<Member, String> codeColumn = new TableColumn<>("NIM/NIS");
         codeColumn.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getMemberCode(), "-")));
-        codeColumn.setStyle("-fx-alignment: CENTER-LEFT;");
+        codeColumn.setStyle("-fx-alignment: CENTER;");
         codeColumn.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
+                setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+                setAlignment(Pos.CENTER);
                 if (empty || item == null) {
                     setText(null);
                     setGraphic(null);
@@ -228,12 +231,20 @@ public class MemberManagementPanel {
                 }
                 Label value = new Label(item);
                 value.getStyleClass().add("member-code-text");
+                value.setWrapText(false);
+                value.setTextOverrun(OverrunStyle.ELLIPSIS);
+                value.setMaxWidth(165);
                 value.setTooltip(new Tooltip(item));
+
+                HBox wrapper = new HBox(value);
+                wrapper.getStyleClass().add("member-code-wrapper");
+                wrapper.setAlignment(Pos.CENTER);
+
                 setText(null);
-                setGraphic(value);
+                setGraphic(wrapper);
             }
         });
-        codeColumn.setPrefWidth(120);
+        codeColumn.setPrefWidth(185);
 
         TableColumn<Member, Member> contactColumn = new TableColumn<>("KONTAK");
         contactColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue()));
@@ -242,47 +253,71 @@ public class MemberManagementPanel {
             @Override
             protected void updateItem(Member item, boolean empty) {
                 super.updateItem(item, empty);
+                setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+                setAlignment(Pos.CENTER_LEFT);
                 if (empty || item == null) {
                     setText(null);
                     setGraphic(null);
                     return;
                 }
 
-                Label line1 = new Label("-");
-                line1.getStyleClass().add("member-contact-primary");
+                String email = buildDisplayEmail(item);
+                String phone = safe(item.getPhone(), "-");
 
-                Label line2 = new Label(safe(item.getPhone(), "-"));
+                Label line1 = new Label(email);
+                line1.getStyleClass().add("member-contact-primary");
+                line1.setWrapText(false);
+                line1.setTextOverrun(OverrunStyle.ELLIPSIS);
+                line1.setMaxWidth(260);
+                line1.setTooltip(new Tooltip(email));
+
+                Label line2 = new Label(phone);
                 line2.getStyleClass().add("member-contact-secondary");
+                line2.setWrapText(false);
+                line2.setTextOverrun(OverrunStyle.ELLIPSIS);
+                line2.setMaxWidth(260);
+                line2.setTooltip(new Tooltip(phone));
 
                 VBox wrapper = new VBox(2, line1, line2);
+                wrapper.getStyleClass().add("member-contact-wrapper");
                 wrapper.setAlignment(Pos.CENTER_LEFT);
+                wrapper.setMaxWidth(260);
 
                 setText(null);
                 setGraphic(wrapper);
             }
         });
-        contactColumn.setPrefWidth(180);
+        contactColumn.setPrefWidth(300);
 
         TableColumn<Member, String> majorColumn = new TableColumn<>("FAKULTAS");
         majorColumn.setCellValueFactory(cell -> new SimpleStringProperty(safe(itemMajor(cell.getValue()), "-")));
-        majorColumn.setStyle("-fx-alignment: CENTER-LEFT;");
+        majorColumn.setStyle("-fx-alignment: CENTER;");
         majorColumn.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
+                setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+                setAlignment(Pos.CENTER);
                 if (empty || item == null) {
                     setText(null);
                     setGraphic(null);
                     return;
                 }
                 Label value = new Label(item);
-                value.getStyleClass().add("member-major-text");
+                value.getStyleClass().add("member-major-chip");
+                value.setWrapText(false);
+                value.setTextOverrun(OverrunStyle.ELLIPSIS);
                 value.setTooltip(new Tooltip(item));
+
+                HBox wrapper = new HBox(value);
+                wrapper.getStyleClass().add("member-major-wrapper");
+                wrapper.setAlignment(Pos.CENTER);
+
                 setText(null);
-                setGraphic(value);
+                setGraphic(wrapper);
             }
         });
-        majorColumn.setPrefWidth(170);
+        majorColumn.setPrefWidth(220);
 
         TableColumn<Member, String> typeColumn = new TableColumn<>("TIPE");
         typeColumn.setCellValueFactory(cell -> new SimpleStringProperty(formatMemberType(cell.getValue().getMemberType())));
@@ -291,6 +326,8 @@ public class MemberManagementPanel {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
+                setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+                setAlignment(Pos.CENTER);
                 if (empty || item == null) {
                     setText(null);
                     setGraphic(null);
@@ -318,6 +355,8 @@ public class MemberManagementPanel {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
+                setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+                setAlignment(Pos.CENTER);
                 if (empty || item == null) {
                     setText(null);
                     setGraphic(null);
@@ -337,13 +376,15 @@ public class MemberManagementPanel {
         });
         statusColumn.setPrefWidth(110);
 
-        TableColumn<Member, Member> actionColumn = new TableColumn<>("");
+        TableColumn<Member, Member> actionColumn = new TableColumn<>("AKSI");
         actionColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue()));
         actionColumn.setStyle("-fx-alignment: CENTER;");
         actionColumn.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(Member item, boolean empty) {
                 super.updateItem(item, empty);
+                setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+                setAlignment(Pos.CENTER);
                 if (empty || item == null) {
                     setText(null);
                     setGraphic(null);
@@ -351,10 +392,10 @@ public class MemberManagementPanel {
                 }
 
                 Button editButton = createIconActionButton(createEditIcon(), "member-action-edit", "Edit anggota");
-                editButton.setOnAction(event -> openEditMemberDialog(item));
+                editButton.setOnAction(event -> requestEditMember(item));
 
                 Button deleteButton = createIconActionButton(createDeleteIcon(), "member-action-delete", "Hapus anggota");
-                deleteButton.setOnAction(event -> openDeleteMemberDialog(item));
+                deleteButton.setOnAction(event -> requestDeleteMember(item));
 
                 HBox actions = new HBox(8, editButton, deleteButton);
                 actions.setAlignment(Pos.CENTER);
@@ -367,7 +408,7 @@ public class MemberManagementPanel {
         });
         actionColumn.setSortable(false);
         actionColumn.setReorderable(false);
-        actionColumn.setPrefWidth(120);
+        actionColumn.setPrefWidth(110);
 
         memberTable.getColumns().setAll(
                 memberColumn,
@@ -378,6 +419,18 @@ public class MemberManagementPanel {
                 statusColumn,
                 actionColumn
         );
+
+        updateTableHeight();
+    }
+
+    private void updateTableHeight() {
+        double rowHeight = memberTable.getFixedCellSize() > 0 ? memberTable.getFixedCellSize() : 56;
+        int rowCount = Math.max(filteredMembers.size(), 1);
+        double tableHeight = MEMBER_TABLE_HEADER_HEIGHT + (rowCount * rowHeight) + 2;
+
+        memberTable.setMinHeight(tableHeight);
+        memberTable.setPrefHeight(tableHeight);
+        memberTable.setMaxHeight(tableHeight);
     }
 
     private Button createIconActionButton(Node icon, String variantClass, String tooltipText) {
@@ -456,29 +509,22 @@ public class MemberManagementPanel {
     }
 
     private void updateSubtitle() {
-        subtitleLabel.setText(filteredMembers.size() + " anggota terdaftar");
+        int total = members.size();
+        int filtered = filteredMembers.size();
+
+        if (total == filtered) {
+            subtitleLabel.setText(total + " anggota terdaftar");
+        } else {
+            subtitleLabel.setText(total + " anggota terdaftar • " + filtered + " hasil ditampilkan");
+        }
     }
 
     private String formatMemberType(MemberType type) {
         if (type == null) {
-            return "Umum";
-        }
-
-        String raw = type.name().toUpperCase(ID_LOCALE);
-
-        if (raw.contains("STUDENT") || raw.contains("MAHASISWA")) {
             return "Mahasiswa";
         }
 
-        if (raw.contains("GUEST") || raw.contains("TAMU")) {
-            return "Tamu";
-        }
-
-        if (raw.contains("LECTURER") || raw.contains("DOSEN")) {
-            return "Tamu";
-        }
-
-        return type.name();
+        return type == MemberType.LECTURER ? "Dosen" : "Mahasiswa";
     }
 
     private String formatModalMemberType(MemberType type) {
@@ -486,21 +532,7 @@ public class MemberManagementPanel {
             return "";
         }
 
-        String raw = type.name().toUpperCase(ID_LOCALE);
-
-        if (raw.contains("STUDENT") || raw.contains("MAHASISWA")) {
-            return "Mahasiswa";
-        }
-
-        if (raw.contains("GUEST") || raw.contains("TAMU")) {
-            return "Tamu (Guest)";
-        }
-
-        if (raw.contains("LECTURER") || raw.contains("DOSEN")) {
-            return "Tamu (Guest)";
-        }
-
-        return formatMemberType(type);
+        return type == MemberType.LECTURER ? "Dosen" : "Mahasiswa";
     }
 
     private String resolveStatusText(Member member) {
@@ -516,17 +548,57 @@ public class MemberManagementPanel {
     }
 
     private String resolveTypeClass(String type) {
-        return "Tamu".equalsIgnoreCase(type) ? "member-type-guest" : "member-type-student";
+        return "Dosen".equalsIgnoreCase(type) ? "member-type-lecturer" : "member-type-student";
     }
 
     private String resolveAvatarClass(Member member) {
         String type = formatMemberType(member.getMemberType());
-        return "Tamu".equalsIgnoreCase(type) ? "member-avatar-guest" : "member-avatar-student";
+        return "Dosen".equalsIgnoreCase(type) ? "member-avatar-lecturer" : "member-avatar-student";
     }
 
-    private String resolveAvatarText(Member member) {
-        String name = safe(member.getName(), "?");
-        return name.substring(0, 1).toUpperCase(ID_LOCALE);
+    private StackPane createAvatar(Member member) {
+        Circle avatarCircle = new Circle(16);
+        avatarCircle.getStyleClass().add(resolveAvatarClass(member));
+
+        boolean lecturer = isLecturerMember(member);
+
+        SVGPath avatarIcon = new SVGPath();
+        avatarIcon.setContent(lecturer
+                ? "M8 8a2.75 2.75 0 1 0 0-5.5A2.75 2.75 0 0 0 8 8zm0 1c-2.486 0-4.5 1.567-4.5 3.5 0 .276.224.5.5.5h8c.276 0 .5-.224.5-.5C12.5 10.567 10.486 9 8 9z"
+                : "M8.211 2.047a.5.5 0 0 1 .578 0l6.5 3.5a.5.5 0 0 1 0 .906l-6.5 3.5a.5.5 0 0 1-.578 0l-6.5-3.5a.5.5 0 0 1 0-.906l6.5-3.5zM2.5 7.633V10c0 1.105 2.239 2 5.5 2s5.5-.895 5.5-2V7.633L8.789 10.19a1.5 1.5 0 0 1-1.578 0L2.5 7.633z");
+        avatarIcon.getStyleClass().addAll(
+                "member-avatar-icon",
+            lecturer ? "member-avatar-icon-lecturer" : "member-avatar-icon-student");
+
+        StackPane avatar = new StackPane(avatarCircle, avatarIcon);
+        avatar.getStyleClass().add("member-avatar-wrap");
+        return avatar;
+    }
+
+    private boolean isLecturerMember(Member member) {
+        String type = formatMemberType(member.getMemberType());
+        return "Dosen".equalsIgnoreCase(type);
+    }
+
+    private String buildDisplayEmail(Member member) {
+        String token = normalizeEmailToken(member == null ? "" : member.getName());
+        if (token.isBlank()) {
+            token = "anggota";
+        }
+
+        String domain = member != null && member.getMemberType() == MemberType.LECTURER
+                ? "dosen.ac.id"
+                : "student.ac.id";
+
+        return token + "@" + domain;
+    }
+
+    private String normalizeEmailToken(String value) {
+        String token = normalize(value)
+                .replaceAll("[^a-z0-9]+", ".")
+                .replaceAll("\\.{2,}", ".")
+                .replaceAll("^\\.|\\.$", "");
+        return token;
     }
 
     private void openAddMemberDialog() {
@@ -783,7 +855,7 @@ public class MemberManagementPanel {
                 refreshData();
                 memberTable.refresh();
                 closeMemberDialog();
-                showInfo("Anggota berhasil diperbarui.");
+                showBookStyleInfo("Anggota berhasil diperbarui.");
             } catch (Exception exception) {
                 String errorMessage = resolveErrorMessage(exception);
 
@@ -837,9 +909,9 @@ public class MemberManagementPanel {
                 refreshData();
                 memberTable.refresh();
                 closeMemberDialog();
-                showInfo("Anggota berhasil dihapus.");
+                showBookStyleInfo("Anggota berhasil dihapus.");
             } catch (Exception exception) {
-                showError(resolveErrorMessage(exception));
+                showBookStyleError(resolveErrorMessage(exception));
             }
         });
 
@@ -1001,6 +1073,83 @@ public class MemberManagementPanel {
 
     private boolean contains(String source, String keyword) {
         return normalize(source).contains(keyword);
+    }
+
+    private void requestEditMember(Member member) {
+        if (member == null || member.getId() == null) {
+            showError("Data anggota tidak valid.");
+            return;
+        }
+
+        openEditMemberDialog(member);
+    }
+
+    private void requestDeleteMember(Member member) {
+        if (member == null || member.getId() == null) {
+            showError("Data anggota tidak valid.");
+            return;
+        }
+
+        String displayName = safe(member.getName(), "Tanpa Nama");
+        if (!showDeleteConfirmation(displayName)) {
+            return;
+        }
+
+        try {
+            memberService.deleteMember(member.getId());
+            refreshData();
+            memberTable.refresh();
+            showBookStyleInfo("Anggota berhasil dihapus.");
+        } catch (Exception exception) {
+            showBookStyleError(resolveErrorMessage(exception));
+        }
+    }
+
+    private boolean showDeleteConfirmation(String memberName) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Konfirmasi Hapus Anggota");
+        alert.setHeaderText("Hapus anggota \"" + memberName + "\"?");
+
+        Label contentLabel = new Label("Aksi ini akan menghapus data anggota secara permanen.");
+        contentLabel.setWrapText(true);
+        contentLabel.setMaxWidth(420);
+
+        alert.getDialogPane().setContent(contentLabel);
+        alert.getDialogPane().setPrefWidth(480);
+        alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
+
+        ButtonType cancelButton = new ButtonType("Batal", ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonType deleteButton = new ButtonType("Hapus", ButtonBar.ButtonData.OK_DONE);
+        alert.getButtonTypes().setAll(cancelButton, deleteButton);
+
+        Window owner = root == null || root.getScene() == null ? null : root.getScene().getWindow();
+        if (owner != null) {
+            alert.initOwner(owner);
+        }
+
+        ButtonType chosen = alert.showAndWait().orElse(cancelButton);
+        return chosen == deleteButton;
+    }
+
+    private void showBookStyleInfo(String message) {
+        showBookStyleAlert(Alert.AlertType.INFORMATION, message);
+    }
+
+    private void showBookStyleError(String message) {
+        showBookStyleAlert(Alert.AlertType.ERROR, message);
+    }
+
+    private void showBookStyleAlert(Alert.AlertType type, String message) {
+        Alert alert = new Alert(type);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+
+        Window owner = root == null || root.getScene() == null ? null : root.getScene().getWindow();
+        if (owner != null) {
+            alert.initOwner(owner);
+        }
+
+        alert.showAndWait();
     }
 
     private void showInfo(String message) {
