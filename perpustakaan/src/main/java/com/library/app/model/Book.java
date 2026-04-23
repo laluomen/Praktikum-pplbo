@@ -23,6 +23,7 @@ public class Book {
         this.publicationYear = publicationYear;
         this.category = category;
         this.shelfCode = shelfCode;
+    
     }
 
     public Long getId() {

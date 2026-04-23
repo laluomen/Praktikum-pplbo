@@ -534,6 +534,14 @@
   -fx-font-weight: 700;
 }
 
+.status-badge-clickable {
+  -fx-cursor: hand;
+}
+
+.status-badge-clickable:hover {
+  -fx-opacity: 0.92;
+}
+
 .status-active {
   -fx-text-fill: #2a75d7;
   -fx-background-color: #e8f1ff;
