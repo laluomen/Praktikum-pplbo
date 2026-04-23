@@ -89,6 +89,26 @@ public class VisitService {
         throw new IllegalArgumentException("Absen tamu hari ini sudah selesai.");
     }
 
+    public String completeGuestVisit(long visitId) {
+        if (visitId <= 0) {
+            throw new IllegalArgumentException("Data kunjungan tamu tidak valid.");
+        }
+
+        Visit visit = visitDAO.findById(visitId)
+                .orElseThrow(() -> new IllegalArgumentException("Data kunjungan tidak ditemukan."));
+
+        if (visit.getVisitType() != VisitType.GUEST) {
+            throw new IllegalArgumentException("Status hanya dapat diubah untuk absen tamu.");
+        }
+
+        if (visit.getVisitStatus() != VisitPresenceStatus.DI_DALAM) {
+            throw new IllegalArgumentException("Status kunjungan tamu sudah selesai.");
+        }
+
+        visitDAO.checkoutGuestVisit(visitId, LocalTime.now().withSecond(0).withNano(0));
+        return "Absen tamu keluar berhasil. Status kunjungan: Selesai.";
+    }
+
     public List<Visit> getRecentVisits() {
         visitDAO.closeOpenMemberVisitsBefore(LocalDate.now());
         visitDAO.closeOpenGuestVisitsBefore(LocalDate.now());

@@ -368,6 +368,9 @@ public class LoanManagementPanel {
                     return visit.getVisitType() == VisitType.GUEST;
                 })
                 .map(visit -> new VisitRow(
+                        visit.getId(),
+                        visit.getVisitType(),
+                        visit.getVisitStatus(),
                         formatVisitDate(visit.getVisitDate()),
                         visit.getVisitType() == VisitType.MEMBER ? "Mahasiswa" : "Tamu",
                         safeText(visit.getVisitorName()),
@@ -610,26 +613,7 @@ public class LoanManagementPanel {
 
             TableColumn<Object, String> statusColumn = new TableColumn<>("STATUS");
             statusColumn.setCellValueFactory(cell -> new SimpleStringProperty(((VisitRow) cell.getValue()).status()));
-            statusColumn.setCellFactory(column -> new TableCell<>() {
-                @Override
-                protected void updateItem(String item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (empty || item == null) {
-                        setGraphic(null);
-                        setText(null);
-                        return;
-                    }
-
-                    Label badge = new Label(item);
-                    badge.getStyleClass().addAll("status-badge", resolveVisitStatusClass(item));
-
-                    HBox wrapper = new HBox(badge);
-                    wrapper.setAlignment(Pos.CENTER);
-
-                    setGraphic(wrapper);
-                    setText(null);
-                }
-            });
+            statusColumn.setCellFactory(column -> createVisitStatusCell());
             statusColumn.setPrefWidth(130);
 
             mainTable.getColumns().setAll(
@@ -672,7 +656,18 @@ public class LoanManagementPanel {
 
         TableColumn<Object, String> statusColumn = new TableColumn<>("STATUS");
         statusColumn.setCellValueFactory(cell -> new SimpleStringProperty(((VisitRow) cell.getValue()).status()));
-        statusColumn.setCellFactory(column -> new TableCell<>() {
+        statusColumn.setCellFactory(column -> createVisitStatusCell());
+        statusColumn.setPrefWidth(110);
+
+        mainTable.getColumns().setAll(
+                nameColumn, institutionColumn, purposeColumn, dateColumn, inColumn, outColumn, statusColumn
+        );
+
+        mainTable.setItems(FXCollections.observableArrayList(new ArrayList<>(visibleVisitRows)));
+    }
+
+    private TableCell<Object, String> createVisitStatusCell() {
+        return new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -685,20 +680,48 @@ public class LoanManagementPanel {
                 Label badge = new Label(item);
                 badge.getStyleClass().addAll("status-badge", resolveVisitStatusClass(item));
 
+                VisitRow visitRow = null;
+                if (getTableRow() != null && getTableRow().getItem() instanceof VisitRow row) {
+                    visitRow = row;
+                }
+
+                if (canCompleteGuestVisitFromStatus(visitRow)) {
+                    VisitRow rowData = visitRow;
+                    badge.getStyleClass().add("status-badge-clickable");
+                    badge.setOnMouseClicked(event -> {
+                        event.consume();
+                        completeGuestVisitFromStatus(rowData);
+                    });
+                }
+
                 HBox wrapper = new HBox(badge);
                 wrapper.setAlignment(Pos.CENTER);
 
                 setGraphic(wrapper);
                 setText(null);
             }
-        });
-        statusColumn.setPrefWidth(110);
+        };
+    }
 
-        mainTable.getColumns().setAll(
-                nameColumn, institutionColumn, purposeColumn, dateColumn, inColumn, outColumn, statusColumn
-        );
+    private boolean canCompleteGuestVisitFromStatus(VisitRow visitRow) {
+        return visitRow != null
+                && visitRow.visitId() != null
+                && visitRow.visitType() == VisitType.GUEST
+                && visitRow.visitStatus() == VisitPresenceStatus.DI_DALAM;
+    }
 
-        mainTable.setItems(FXCollections.observableArrayList(new ArrayList<>(visibleVisitRows)));
+    private void completeGuestVisitFromStatus(VisitRow visitRow) {
+        if (!canCompleteGuestVisitFromStatus(visitRow)) {
+            return;
+        }
+
+        try {
+            String message = visitService.completeGuestVisit(visitRow.visitId());
+            refreshData();
+            showInfo(message);
+        } catch (Exception exception) {
+            showError(resolveErrorMessage(exception));
+        }
     }
 
     private TableCell<Object, String> centeredTextCell(String styleClass) {
@@ -1195,6 +1218,9 @@ public class LoanManagementPanel {
     }
 
     private record VisitRow(
+            Long visitId,
+            VisitType visitType,
+            VisitPresenceStatus visitStatus,
             String date,
             String type,
             String name,

@@ -127,6 +127,24 @@ public class VisitDAO {
         }
     }
 
+    public Optional<Visit> findById(long visitId) {
+        String sql = "SELECT id, member_id, visitor_name, visitor_identifier, visit_type, visit_status, institution, purpose, visit_date, check_in_time, check_out_time " +
+                "FROM visits WHERE id = ? LIMIT 1";
+
+        try (Connection connection = DBConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, visitId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    return Optional.empty();
+                }
+                return Optional.of(map(resultSet));
+            }
+        } catch (SQLException exception) {
+            throw new RuntimeException("Gagal mengambil data kunjungan.", exception);
+        }
+    }
+
     public void updateStatus(long visitId, VisitPresenceStatus status) {
         String sql = "UPDATE visits SET visit_status = ? WHERE id = ?";
         try (Connection connection = DBConnection.getConnection();
