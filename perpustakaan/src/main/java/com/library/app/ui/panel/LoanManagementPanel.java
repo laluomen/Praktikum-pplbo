@@ -178,7 +178,7 @@ public class LoanManagementPanel {
         configureTabButtonGraphic(activeTabButton,
             "M3 4h7a3 3 0 0 1 2 2v10a2 2 0 0 0-2-2H3z M21 4h-7a3 3 0 0 0-2 2v10a2 2 0 0 1 2-2h7z");
         configureTabButtonGraphic(returnedTabButton,
-            "M4 5v6h6 M4 11a8 8 0 1 0 2.4-5.7");
+            "M20 11H8.8l3.6-3.6L11 6l-6 6l6 6l1.4-1.4L8.8 13H20z");
         configureTabButtonGraphic(memberVisitTabButton,
             "M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6 M6 20a6 6 0 0 1 12 0");
         configureTabButtonGraphic(guestVisitTabButton,

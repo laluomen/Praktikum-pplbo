@@ -148,7 +148,7 @@ public class ReportPanel {
             createStatCard("\uD83D\uDCD6", "icon-blue", "Total Peminjaman"),
             createStatCard("\u2713", "icon-green", "Dikembalikan"),
             createStatCard("\u23F0", "icon-orange", "Terlambat"),
-            createStatCard("\u00A4", "icon-sand", "Total Denda"));
+         createStatCard("\uD83D\uDCB0", "icon-sand", "Total Denda"));
 
       for (Node node : cards.getChildren()) {
          HBox.setHgrow(node, Priority.ALWAYS);
