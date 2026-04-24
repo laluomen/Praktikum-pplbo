@@ -2048,3 +2048,11 @@
     -fx-font-size: 13px;
     -fx-text-fill: #6b7280;
 }
+
+.admin-textarea .scroll-pane,
+.admin-textarea .viewport,
+.admin-textarea .content {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+}

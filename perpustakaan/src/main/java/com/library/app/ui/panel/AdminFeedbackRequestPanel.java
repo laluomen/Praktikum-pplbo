@@ -348,6 +348,7 @@ public class AdminFeedbackRequestPanel {
         responseArea.setWrapText(true);
         responseArea.setPrefRowCount(6);
         responseArea.setStyle(textAreaStyle());
+        responseArea.getStyleClass().add("admin-textarea");
 
         if (selectedFeedback.getRespondedAt() != null) {
             Label respondedAt = new Label("Terakhir diperbarui: " + formatDateTime(selectedFeedback.getRespondedAt()));
@@ -501,6 +502,7 @@ public class AdminFeedbackRequestPanel {
         noteArea.setWrapText(true);
         noteArea.setPrefRowCount(5);
         noteArea.setStyle(textAreaStyle());
+        noteArea.getStyleClass().add("admin-textarea");
 
         HBox buttonRow = new HBox(12);
         buttonRow.setAlignment(Pos.CENTER_LEFT);
