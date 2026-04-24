@@ -9,6 +9,7 @@ import javafx.animation.ParallelTransition;
 import javafx.animation.PauseTransition;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
+import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -695,6 +696,7 @@ public class MemberManagementPanel {
         VBox body = new VBox(16);
         body.getStyleClass().add("member-modal-body");
 
+        body.getChildren().add(errorToast);
         body.getChildren().add(buildModalField("Tipe Anggota", typeInput));
         body.getChildren().add(buildModalFieldWithError("NIM / NIS", codeInput, codeErrorLabel));
         body.getChildren().add(buildModalFieldWithError("Nama Lengkap", nameInput, nameErrorLabel));
@@ -703,6 +705,7 @@ public class MemberManagementPanel {
         body.getChildren().add(buildModalField("Fakultas / Jurusan", majorInput));
         body.getChildren().add(buildModalField("Status", statusInput));
 
+        ScrollPane bodyScroller = buildModalBodyScroller(body);
         HBox footer = buildModalFooter();
 
         Button cancelButton = createCancelModalButton();
@@ -720,7 +723,7 @@ public class MemberManagementPanel {
 
             MemberType selectedType = typeInput.getValue();
             if (selectedType == null) {
-                showError("Tipe anggota wajib dipilih.");
+                showModalInlineError(errorToast, errorMessageLabel, "Tipe anggota wajib dipilih.", bodyScroller);
                 return;
             }
 
@@ -764,12 +767,12 @@ public class MemberManagementPanel {
                     return;
                 }
 
-                showModalInlineError(errorToast, errorMessageLabel, errorMessage);
+                showModalInlineError(errorToast, errorMessageLabel, errorMessage, bodyScroller);
             }
         });
 
         footer.getChildren().addAll(cancelButton, saveButton);
-        card.getChildren().addAll(buildModalBodyScroller(body), errorToast, footer);
+        card.getChildren().addAll(bodyScroller, footer);
         overlay.getChildren().add(card);
 
         return overlay;
@@ -803,6 +806,7 @@ public class MemberManagementPanel {
         VBox body = new VBox(16);
         body.getStyleClass().add("member-modal-body");
 
+        body.getChildren().add(errorToast);
         body.getChildren().add(buildModalField("Tipe Anggota", typeInput));
         body.getChildren().add(buildModalFieldWithError("NIM / NIS", codeInput, codeErrorLabel));
         body.getChildren().add(buildModalFieldWithError("Nama Lengkap", nameInput, nameErrorLabel));
@@ -811,6 +815,7 @@ public class MemberManagementPanel {
         body.getChildren().add(buildModalField("Fakultas / Jurusan", majorInput));
         body.getChildren().add(buildModalField("Status", statusInput));
 
+        ScrollPane bodyScroller = buildModalBodyScroller(body);
         HBox footer = buildModalFooter();
 
         Button cancelButton = createCancelModalButton();
@@ -828,7 +833,7 @@ public class MemberManagementPanel {
 
             MemberType selectedType = typeInput.getValue();
             if (selectedType == null) {
-                showError("Tipe anggota wajib dipilih.");
+                showModalInlineError(errorToast, errorMessageLabel, "Tipe anggota wajib dipilih.", bodyScroller);
                 return;
             }
 
@@ -874,12 +879,12 @@ public class MemberManagementPanel {
                     return;
                 }
 
-                showModalInlineError(errorToast, errorMessageLabel, errorMessage);
+                showModalInlineError(errorToast, errorMessageLabel, errorMessage, bodyScroller);
             }
         });
 
         footer.getChildren().addAll(cancelButton, saveButton);
-        card.getChildren().addAll(buildModalBodyScroller(body), errorToast, footer);
+        card.getChildren().addAll(bodyScroller, footer);
         overlay.getChildren().add(card);
 
         return overlay;
@@ -1029,9 +1034,9 @@ public class MemberManagementPanel {
         toast.setAlignment(Pos.CENTER_LEFT);
         toast.setVisible(false);
         toast.setManaged(false);
-        toast.setPrefWidth(ADD_MEMBER_MODAL_WIDTH - 64);
-        toast.setMaxWidth(ADD_MEMBER_MODAL_WIDTH - 64);
-        VBox.setMargin(toast, new Insets(6, 24, 2, 24));
+        toast.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(toast, Priority.ALWAYS);
+        VBox.setMargin(toast, new Insets(6, 0, 2, 0));
         toast.setStyle(
                 "-fx-background-color: #fef2f2; " +
                 "-fx-border-color: #fecaca; " +
@@ -1046,17 +1051,38 @@ public class MemberManagementPanel {
     }
 
     private void showModalInlineError(HBox toast, Label messageLabel, String message) {
+        showModalInlineError(toast, messageLabel, message, null);
+    }
+
+    private void showModalInlineError(HBox toast, Label messageLabel, String message, ScrollPane bodyScroller) {
         if (toast == null || messageLabel == null) {
             return;
+        }
+        PauseTransition previousDelay = (PauseTransition) toast.getProperties().get("autoHideDelay");
+        if (previousDelay != null) {
+            previousDelay.stop();
         }
         messageLabel.setText(message == null ? "" : message);
         toast.setManaged(true);
         toast.setVisible(true);
+        if (bodyScroller != null) {
+            Platform.runLater(() -> bodyScroller.setVvalue(0));
+        }
+
+        PauseTransition delay = new PauseTransition(Duration.millis(3500));
+        delay.setOnFinished(event -> hideModalInlineError(toast, messageLabel));
+        toast.getProperties().put("autoHideDelay", delay);
+        delay.play();
     }
 
     private void hideModalInlineError(HBox toast, Label messageLabel) {
         if (toast == null || messageLabel == null) {
             return;
+        }
+        PauseTransition previousDelay = (PauseTransition) toast.getProperties().get("autoHideDelay");
+        if (previousDelay != null) {
+            previousDelay.stop();
+            toast.getProperties().remove("autoHideDelay");
         }
         messageLabel.setText("");
         toast.setVisible(false);
